@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mandato</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<nav class="navbar navbar-dark mb-4">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-3">
+      <span class="navbar-brand">Mandato</span>
+      <span class="navbar-meta">{{ total_noticias }} notícias indexadas</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      {% if session.get('user_name') %}
+        {% if session.get('profile_image') %}
+          <img src="{{ url_for('static', filename='uploads/' ~ session.get('profile_image')) }}" alt="perfil" class="profile-img me-2">
+        {% else %}
+          <img src="https://ui-avatars.com/api/?name={{ session.get('user_name')|urlencode }}&background=7c3aed&color=fff&size=64" alt="perfil" class="profile-img me-2">
+        {% endif %}
+        <span class="small">{{ session.get('user_name') }}</span>
+        <a href="{{ url_for('logout') }}" class="btn-secondary ms-2" style="padding:0.35rem 0.6rem; font-size:0.85rem;">Sair</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="btn-secondary me-2">Entrar</a>
+        <a href="{{ url_for('register') }}" class="btn-atualizar">Cadastrar</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="page-header">
+    <div class="header-top d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <p class="eyebrow">Dashboard de insights</p>
+        <h1>Mandato</h1>
+      </div>
+      <div class="search-wrapper">
+        <form method="GET" class="d-flex align-items-center">
+          <input class="search-input" type="text" name="q" value="{{ pesquisa or '' }}" placeholder="Pesquisar notícias, tendências ou marcas...">
+          <button type="submit" class="btn-atualizar ms-2">Buscar</button>
+        </form>
+        <div class="small text-muted mt-1">{{ total_noticias }} notícias indexadas</div>
+      </div>
+    </div>
+
+    <div class="header-filters mt-3 d-flex flex-wrap gap-2 align-items-center">
+      <div class="filtros d-flex gap-2 align-items-center">
+        <span class="fw-semibold">Portais:</span>
+        <a class="filtro-btn {% if not filtro_fonte %}ativo{% endif %}" href="/?{% if filtro_tema %}tema={{ filtro_tema }}&{% endif %}{% if pesquisa %}q={{ pesquisa }}&{% endif %}">Todos</a>
+        {% for nome in fontes_disponiveis %}
+          <a class="filtro-btn {% if filtro_fonte == nome %}ativo{% endif %}" href="/?fonte={{ nome }}{% if filtro_tema %}&tema={{ filtro_tema }}{% endif %}{% if pesquisa %}&q={{ pesquisa }}{% endif %}">{{ nome }}</a>
+        {% endfor %}
+      </div>
+      <div class="filtros d-flex gap-2 align-items-center">
+        <span class="fw-semibold">Temas:</span>
+        <a class="filtro-btn {% if not filtro_tema %}ativo{% endif %}" href="/?{% if filtro_fonte %}fonte={{ filtro_fonte }}&{% endif %}{% if pesquisa %}q={{ pesquisa }}&{% endif %}">Todos</a>
+        {% for tema in temas_disponiveis %}
+          <a class="filtro-btn {% if filtro_tema == tema %}ativo{% endif %}" href="/?tema={{ tema }}{% if filtro_fonte %}&fonte={{ filtro_fonte }}{% endif %}{% if pesquisa %}&q={{ pesquisa }}{% endif %}">{{ tema }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4 main-grid">
+    <div class="col-lg-8">
+      <div class="hero-card mb-3">
+        <div>
+          <p class="eyebrow">Principais Insights</p>
+          <p class="page-description mb-0">Feed consolidado com as manchetes mais relevantes — role para ver mais.</p>
+        </div>
+        <div class="hero-actions">
+          <form method="POST" class="mb-0">
+            <button class="btn-atualizar" type="submit">⟳ Atualizar notícias</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Feed principal (cards com miniaturas) -->
+      <div class="feed-grid">
+        {% for n in noticias %}
+        <article class="card-news">
+          <a href="{{ n.link }}" target="_blank" rel="noopener">
+            <div class="card-thumb">
+              {% if n.image %}
+                <img src="{{ n.image }}" alt="thumb">
+              {% else %}
+                <img src="https://picsum.photos/seed/{{ loop.index }}{{ n.fonte|replace(' ', '') }}/480/260" alt="thumb">
+              {% endif %}
+            </div>
+            <div class="card-body">
+              <div class="card-meta"><span class="badge-fonte">{{ n.fonte }}</span> <span class="text-muted">{{ n.data.strftime('%d/%m %H:%M') if n.data else '—' }}</span></div>
+              <h3 class="card-title">{{ n.manchete }}</h3>
+              <div class="card-sub">{{ n.tema or 'Política' }}</div>
+            </div>
+          </a>
+        </article>
+        {% else %}
+        <div class="empty-state">Nenhuma notícia encontrada. Clique em "Atualizar notícias".</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <aside class="sidebar">
+        <div class="profile-card p-3 mb-3 rounded">
+          {% if session.get('profile_image') %}
+            <img src="{{ url_for('static', filename='uploads/'~session.get('profile_image')) }}" class="profile-large" alt="perfil">
+          {% else %}
+            <img src="https://ui-avatars.com/api/?name={{ session.get('user_name','User')|urlencode }}&background=7c3aed&color=fff&size=128" class="profile-large" alt="perfil">
+          {% endif %}
+          <div class="mt-2 fw-bold">{{ session.get('user_name','Visitante') }}</div>
+          <div class="small text-muted">Membro</div>
+        </div>
+
+        <div class="stat-block p-3 mb-3 rounded">
+          <div class="small text-muted">Novas notícias</div>
+          <div class="h4 fw-bold">{{ total_noticias }}</div>
+        </div>
+
+        <div class="stat-block p-3 mb-3 rounded">
+          <div class="small text-muted">Temas detectados</div>
+          <div class="h5">{{ temas_disponiveis|length }}</div>
+        </div>
+
+        <div class="stat-block p-3 rounded">
+          <div class="small text-muted">Fontes ativas</div>
+          <div class="h5">{{ fontes_disponiveis|length }}</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="filters-panel">
+    <div class="filter-row">
+      <form method="GET">
+        <input type="text" name="q" value="{{ pesquisa or '' }}" placeholder="Buscar por palavra-chave">
+        <input type="date" name="data_inicio" value="{{ data_inicio or '' }}">
+        <input type="date" name="data_fim" value="{{ data_fim or '' }}">
+        <button type="submit" class="btn-atualizar">Filtrar</button>
+      </form>
+      <a href="/" class="btn-atualizar btn-secondary">Limpar</a>
+    </div>
+    <div class="filtros">
+      <span>Fonte:</span>
+      <a class="filtro-btn {% if not filtro_fonte %}ativo{% endif %}" href="/?{% if filtro_tema %}tema={{ filtro_tema }}&{% endif %}{% if pesquisa %}q={{ pesquisa }}&{% endif %}">Todas</a>
+      {% for nome in fontes_disponiveis %}
+        <a class="filtro-btn {% if filtro_fonte == nome %}ativo{% endif %}" href="/?fonte={{ nome }}{% if filtro_tema %}&tema={{ filtro_tema }}{% endif %}{% if pesquisa %}&q={{ pesquisa }}{% endif %}">{{ nome }}</a>
+      {% endfor %}
+    </div>
+    <div class="filtros">
+      <span>Tema:</span>
+      <a class="filtro-btn {% if not filtro_tema %}ativo{% endif %}" href="/?{% if filtro_fonte %}fonte={{ filtro_fonte }}&{% endif %}{% if pesquisa %}q={{ pesquisa }}&{% endif %}">Todos</a>
+      {% for tema in temas_disponiveis %}
+        <a class="filtro-btn {% if filtro_tema == tema %}ativo{% endif %}" href="/?tema={{ tema }}{% if filtro_fonte %}&fonte={{ filtro_fonte }}{% endif %}{% if pesquisa %}&q={{ pesquisa }}{% endif %}">{{ tema }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Mensagem de retorno -->
+  {% if mensagem %}
+  <div class="msg-sucesso mb-4">✓ {{ mensagem }}</div>
+  {% endif %}
+
+  <!-- Cards de contagem -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-number">{{ total_noticias }}</div>
+        <div class="stat-label">Notícias indexadas</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-number">{{ temas_disponiveis|length }}</div>
+        <div class="stat-label">Temas detectados</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-number">{{ fontes_disponiveis|length }}</div>
+        <div class="stat-label">Fontes ativas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="chart-card">
+        <h6>Notícias por fonte</h6>
+        <canvas id="graficoFontes" height="180"></canvas>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="chart-card">
+        <h6>Volume de notícias (últimos 14 dias)</h6>
+        <canvas id="graficoTimeline" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <p class="secao-titulo">Últimas 100 notícias</p>
+  <div class="table-container">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th class="col-date">Data</th>
+          <th class="col-fonte">Fonte</th>
+          <th class="col-tema">Tema</th>
+          <th>Manchete</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in noticias %}
+        <tr>
+          <td class="news-date">
+            {{ n.data.strftime('%d/%m %H:%M') if n.data else '—' }}
+          </td>
+          <td>
+            <span class="badge-fonte">{{ n.fonte }}</span>
+          </td>
+          <td>
+            <span class="badge-tema">{{ n.tema or 'Política' }}</span>
+          </td>
+          <td>
+            <a href="{{ n.link }}" target="_blank" rel="noopener">
+              {{ n.manchete }}
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="empty-state">
+            Nenhuma notícia encontrada. Clique em "Atualizar notícias".
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ======================== -->
+<!-- GRÁFICOS COM CHART.JS    -->
+<!-- ======================== -->
+<script>
+  const commonOptions = {
+    plugins: {
+      legend: {
+        labels: { color: '#94a3b8', font: { size: 12 } }
+      }
+    }
+  };
+
+  // Gráfico 2 - Fontes (barras)
+  const fonteLabels = {{ fontes_grafico.keys()|list|tojson }};
+  const fonteDados  = {{ fontes_grafico.values()|list|tojson }};
+
+  new Chart(document.getElementById('graficoFontes'), {
+    type: 'bar',
+    data: {
+      labels: fonteLabels,
+      datasets: [{
+        label: 'Notícias',
+        data: fonteDados,
+        backgroundColor: '#7c3aed',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      ...commonOptions,
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' }, beginAtZero: true }
+      }
+    }
+  });
+
+  const timelineLabels = {{ timeline_labels|tojson }};
+  const timelineValues = {{ timeline_values|tojson }};
+
+  new Chart(document.getElementById('graficoTimeline'), {
+    type: 'line',
+    data: {
+      labels: timelineLabels,
+      datasets: [{
+        label: 'Notícias por dia',
+        data: timelineValues,
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56, 189, 248, 0.2)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 4
+      }]
+    },
+    options: {
+      ...commonOptions,
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' }, beginAtZero: true }
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

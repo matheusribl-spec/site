@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadastro - Mandato</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav class="navbar navbar-light mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="/">Mandato</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="card p-4" style="max-width:600px;margin:0 auto;">
+    <h4>Crie seu perfil</h4>
+    <p class="small text-muted">Adicione um nome e uma foto para aparecer no dashboard.</p>
+    <form method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label">Nome</label>
+        <input type="text" name="nome" class="form-control" placeholder="Seu nome">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" placeholder="seu@email.com">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Senha (opcional)</label>
+        <input type="password" name="senha" class="form-control" placeholder="Informe uma senha">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Foto de perfil (png/jpg)</label>
+        <input type="file" name="foto" accept="image/*" class="form-control">
+      </div>
+      <div class="d-flex justify-content-between">
+        <a href="/" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>
