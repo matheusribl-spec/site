@@ -1,8 +1,7 @@
 Flask==2.3.3
-selenium==4.19.0
 beautifulsoup4==4.12.2
 requests==2.31.0
 PyMySQL==1.1.0
 mysql-connector-python==9.5.0
-LeIA
-gnews
+gunicorn==21.2.0
+python-dotenv==1.0.0
