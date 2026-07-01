@@ -2,6 +2,7 @@ import hashlib
 import logging
 import re
 from pathlib import Path
+from time import perf_counter
 from typing import Dict, List, Optional, Set
 from urllib.parse import urljoin, urlparse
 
@@ -15,12 +16,14 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
+MAX_NEWS_PER_SOURCE = 5
+
 SOURCE_LIST = [
     {"url": "https://g1.globo.com/politica/", "nome": "G1", "tema": "Política"},
-    {"url": "https://www.uol.com.br/politica/", "nome": "UOL", "tema": "Política"},
-    {"url": "https://www1.folha.uol.com.br/poder/", "nome": "Folha", "tema": "Política"},
-    {"url": "https://www.poder360.com.br/", "nome": "Poder360", "tema": "Política"},
-    {"url": "https://www.metropoles.com/politica/", "nome": "Metrópoles", "tema": "Política"},
+    # {"url": "https://www.uol.com.br/politica/", "nome": "UOL", "tema": "Política"},
+    # {"url": "https://www1.folha.uol.com.br/poder/", "nome": "Folha", "tema": "Política"},
+    # {"url": "https://www.poder360.com.br/", "nome": "Poder360", "tema": "Política"},
+    # {"url": "https://www.metropoles.com/politica/", "nome": "Metrópoles", "tema": "Política"},
 ]
 
 HEADERS = {
@@ -234,16 +237,7 @@ def _save_image(image_url: str, session: requests.Session) -> Optional[str]:
 
 
 def _extract_image(link: str, session: requests.Session) -> Optional[str]:
-    response = _fetch_response(link, session)
-    if not response:
-        return None
-
-    page = BeautifulSoup(response.text, "html.parser")
-    meta = page.find("meta", property="og:image") or page.find("meta", attrs={"name": "twitter:image"})
-    image_url = meta.get("content") if meta else None
-    if image_url:
-        image_url = urljoin(link, image_url)
-        return _save_image(image_url, session)
+    # Temporariamente desabilitado para reduzir a duração do scraping.
     return None
 
 
@@ -256,6 +250,9 @@ def _gather_links(source: Dict[str, str], session: requests.Session, seen_links:
     results: List[Dict[str, str]] = []
 
     for anchor in document.select("a[href]"):
+        if len(results) >= MAX_NEWS_PER_SOURCE:
+            break
+
         title = anchor.get_text(strip=True)
         raw_link = anchor["href"].strip()
         link = urljoin(source["url"], raw_link)
@@ -273,7 +270,7 @@ def _gather_links(source: Dict[str, str], session: requests.Session, seen_links:
         if not _is_title_relevant(title):
             continue
 
-        image_path = _extract_image(link, session)
+        image_path = None
         results.append(
             {
                 "tema": _classify_topic(title, source["tema"]),
@@ -293,9 +290,20 @@ def scrape_news() -> List[Dict[str, Optional[str]]]:
     collected: List[Dict[str, Optional[str]]] = []
     seen_links: Set[str] = set()
 
+    start_total = perf_counter()
+
     for source in SOURCE_LIST:
-        logger.info("Scraping de %s", source["url"])
-        collected.extend(_gather_links(source, session, seen_links))
+        source_name = source["nome"]
+        logger.info("Iniciando scraping do %s...", source_name)
+        start_source = perf_counter()
+        collected_source = _gather_links(source, session, seen_links)
+        collected.extend(collected_source)
+        source_elapsed = perf_counter() - start_source
+        logger.info("%s concluído em %.2f segundos", source_name, source_elapsed)
+        logger.info("Foram coletadas %d notícias do %s", len(collected_source), source_name)
+
+    total_elapsed = perf_counter() - start_total
+    logger.info("Tempo total de scraping: %.2f segundos", total_elapsed)
 
     return collected
 
