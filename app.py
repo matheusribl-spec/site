@@ -7,7 +7,6 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 import auth
 import dashboard
 import models
-import scraper
 from config import Config
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
@@ -64,6 +63,17 @@ def index() -> Any:
 
 @app.route("/atualizar", methods=["POST"])
 def refresh_news() -> Any:
+    from flask import request
+import logging
+
+logging.warning("=" * 60)
+logging.warning("ENTROU NA ROTA /atualizar")
+logging.warning("Método: %s", request.method)
+logging.warning("User-Agent: %s", request.headers.get("User-Agent"))
+logging.warning("IP: %s", request.remote_addr)
+logging.warning("=" * 60)
+    import scraper
+
     quantidade_novas = scraper.update_news()
     flash(f"{quantidade_novas} nova(s) notícia(s) coletada(s).", "success")
     return redirect(url_for("index"))
