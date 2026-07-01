@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException, Timeout
 
+import models
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -297,3 +298,9 @@ def scrape_news() -> List[Dict[str, Optional[str]]]:
         collected.extend(_gather_links(source, session, seen_links))
 
     return collected
+
+
+def update_news() -> int:
+    """Execute scraping e grave novas notícias no banco."""
+    noticias = scrape_news()
+    return models.save_news_items(noticias)

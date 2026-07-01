@@ -22,15 +22,8 @@ app.config["MAX_CONTENT_LENGTH"] = Config.MAX_CONTENT_LENGTH
 models.initialize_database()
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def index() -> Any:
-    mensagem: str | None = None
-
-    if request.method == "POST":
-        noticias_coletadas = scraper.scrape_news()
-        quantidade_novas = models.save_news_items(noticias_coletadas)
-        mensagem = f"{quantidade_novas} nova(s) notícia(s) coletada(s)."
-
     filtro_fonte = request.args.get("fonte", "")
     filtro_tema = request.args.get("tema", "")
     pesquisa = request.args.get("q", "").strip()
@@ -59,7 +52,7 @@ def index() -> Any:
     return render_template(
         "index.html",
         noticias=noticias,
-        mensagem=mensagem,
+        mensagem=None,
         filtro_fonte=filtro_fonte,
         filtro_tema=filtro_tema,
         pesquisa=pesquisa,
@@ -67,6 +60,13 @@ def index() -> Any:
         data_fim=data_fim,
         **context,
     )
+
+
+@app.route("/atualizar", methods=["POST"])
+def refresh_news() -> Any:
+    quantidade_novas = scraper.update_news()
+    flash(f"{quantidade_novas} nova(s) notícia(s) coletada(s).", "success")
+    return redirect(url_for("index"))
 
 
 @app.route("/login", methods=["GET", "POST"])
